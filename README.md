@@ -1,1 +1,1 @@
-# amplify
+# Amplify
