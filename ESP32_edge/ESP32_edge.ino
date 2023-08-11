@@ -4,6 +4,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <SD.h>
+#include <LoRa.h>
 
 // Network credentials
 const char* ssid     = "SERAPHIX";
@@ -15,30 +16,32 @@ const long  gmtOffset_sec = 19800; //IST +05:30
 const int   daylightOffset_sec = 0;
 
 //OLED Screen Configuration
+#define OLED_SDA 21
+#define OLED_SCL 22 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3C
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-// Change this to match your SD card module's CS (Chip Select) pin
+// Change this to match SD card module's CS (Chip Select) pin
 const int chipSelect = 2; 
+
+//define the pins used by the transceiver module
+#define ss 12
+#define rst 14
+#define dio0 39
 
 // Declaring Variables
 int ct_resistance = 150;
 int ct_ratio = 2500;
-float red_line_current;
-float blue_line_current;
-float yellow_line_current;
-float current_rms;
+float red_line_current, blue_line_current, yellow_line_current, current_rms;
 float threshold = 10.0;
 float threshold_upper = threshold + 0.5;
 float threshold_lower = threshold - 0.5;
-String dayOfWeek;
-String date;
-String exactTime;
+String dayOfWeek, date, exactTime, LoRa_transmitted_data;
 
-void printLocalTime() // Function to get date and time
+void localTime() // Function to get date and time
 {
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
@@ -53,12 +56,10 @@ void printLocalTime() // Function to get date and time
   strftime(dayOfWeek_array, sizeof(dayOfWeek_array), "%A", &timeinfo);
   strftime(date_array, sizeof(date_array), "%d-%B-%Y", &timeinfo);
   strftime(exactTime_array, sizeof(exactTime_array), "%H:%M:%S", &timeinfo);
-  dayOfWeek = dayOfWeek_array;
-  date = date_array;
-  exactTime = exactTime_array;
-  Serial.println(dayOfWeek);
-  Serial.println(date);
-  Serial.println(exactTime);
+  dayOfWeek = String(dayOfWeek_array);
+  date = String(date_array);
+  exactTime = String(exactTime_array);
+  
 }
 
 float voltageToCurrent(int value) //Convert voltage obtained from CT to Required current
@@ -66,7 +67,7 @@ float voltageToCurrent(int value) //Convert voltage obtained from CT to Required
   return (ct_ratio*value*1.3/(ct_resistance*4096)); // Dividing resistance after converting it back to analog values. Multiplying with CT's factor
 }
 
-float getCurrentValue() //Function to get the value of current in each phase line
+void getCurrentValue() //Function to get the value of current in each phase line
 { 
   float red_line_current_instant = 0;
   float blue_line_current_instant = 0;
@@ -103,7 +104,7 @@ float getCurrentValue() //Function to get the value of current in each phase lin
     display.print(yellow_line_current_instant);
     display.print(" A");
     yellow_line_current += yellow_line_current_instant;
-    
+    localTime();
     delay(6000); // 6 second delay 
   }
   red_line_current = red_line_current/10;
@@ -112,7 +113,7 @@ float getCurrentValue() //Function to get the value of current in each phase lin
 
   current_rms = sqrt((red_line_current)*(red_line_current) + (blue_line_current)*(blue_line_current) + (blue_line_current)*(blue_line_current));
 
-  return red_line_current, blue_line_current, yellow_line_current, current_rms;
+  // return red_line_current, blue_line_current, yellow_line_current, current_rms;
 }
 
 void triggerLEDS() //Function to trigger LEDs. Red - GPIO14, Green - GPIO26, Blue - GPIO4
@@ -169,10 +170,21 @@ void writeToSD() // Function to read and write SD card
   }
 }
 
+void transmittData(float four, float five, float six, float seven) //1 threshold, 3 phase values, 1 main current
+{ 
+  Serial.print("Sending packet: ");
+  LoRa_transmitted_data = four + ',' + five + ',' + six + ',' + seven;
+  //Send LoRa packet to receiver
+  LoRa.beginPacket();
+  LoRa.print(LoRa_transmitted_data);
+  LoRa.endPacket();
+
+}
 void setup()
 {
   analogSetAttenuation(ADC_6db); //Setting the attenuation to 6db, Setting the limit of voltage read to 1.3 Volts
   Serial.begin(115200);
+
   //Connect to WiFi
   Serial.printf("Connecting to %s ", ssid);
   WiFi.begin(ssid, password);
@@ -181,25 +193,44 @@ void setup()
       Serial.print(".");
   }
   Serial.println("CONNECTED");
+
   //initalize and get the time
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  printLocalTime();
+  localTime();
+
+  // SD Initialization
   if (!SD.begin(2)) {
     Serial.println("Card failed, or not present");
   } else {
     Serial.println("Card initialized.");
   }
-  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-    Serial.println("SSD1306 allocation failed");
-    for(;;); // Don't proceed, loop forever
+
+  //OLED Initialization
+  Wire.begin(OLED_SDA, OLED_SCL);
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS, false, false)) {
+    Serial.println("SSD1306 allocation failed"); // Don't proceed, loop forever
   }
+
+  //Setup LoRa transceiver module
+  LoRa.setPins(ss, rst, dio0);
+  //replace the LoRa.begin argument with your location's frequency 
+  //433E6 for Asia, 866E6 for Europe, 915E6 for North America
+  while (!LoRa.begin(433E6)) {
+    Serial.println(".");
+    delay(500);
+  }
+   // Add a sync word to match the receiver for encryption purposes if required
+  Serial.println("LoRa Initializing OK!");
 }
 
 void loop()
 {
-  delay(1000);
-  printLocalTime();
+  // delay(1000);
+  Serial.println(dayOfWeek);
+  Serial.println(date);
+  Serial.println(exactTime);
   getCurrentValue();
   triggerLEDS();
-  writeToSD();
+  transmittData(threshold,red_line_current, blue_line_current, yellow_line_current);
+  // writeToSD();
 }
