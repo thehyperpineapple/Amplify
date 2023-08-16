@@ -72,19 +72,24 @@ void getCurrentValue() //Function to get the value of current in each phase line
   float red_line_current_instant = 0;
   float blue_line_current_instant = 0;
   float yellow_line_current_instant = 0;
+  float current_rms_instant;
   int count;
-  display.clearDisplay(); //Initialize Display
-  display.setCursor(0,0);
-  display.setTextSize(1);
-  display.println("Threshold: "); //Dsiplay threshold value
-  display.print(threshold);
-  display.print(" A");
+  
 
   for (count = 0; count <10; count++) 
   {
+    display.clearDisplay(); //Clear Display
+    display.setTextColor(WHITE);
+    display.setCursor(0,0);
+    display.setTextSize(1);
+    display.print("Threshold: "); //Display threshold value
+    display.print(threshold);
+    display.print(" A");
+
     red_line_current_instant = analogRead(36);//Connect Red line to GPIO36
     red_line_current_instant = voltageToCurrent(red_line_current_instant);
-    display.println("R: "); //Display Red Line current
+    display.setCursor(0,10);
+    display.print("R: "); //Display Red Line current
     display.print(red_line_current_instant);
     display.print(" A");
     red_line_current += red_line_current_instant;
@@ -92,7 +97,8 @@ void getCurrentValue() //Function to get the value of current in each phase line
 
     blue_line_current_instant = analogRead(39); //Connect Blue line to GPIO39
     blue_line_current_instant = voltageToCurrent(blue_line_current_instant); 
-    display.println("B: "); //Display Blue Line current
+    display.setCursor(0,20);
+    display.print("B: "); //Display Blue Line current
     display.print(blue_line_current_instant);
     display.print(" A");
     blue_line_current += blue_line_current_instant;
@@ -100,20 +106,29 @@ void getCurrentValue() //Function to get the value of current in each phase line
 
     yellow_line_current_instant = analogRead(34); //Connect Yellow line to GPIO34
     yellow_line_current_instant = voltageToCurrent(yellow_line_current_instant);
-    display.println("Y: "); //Display Yellow Line current
+    display.setCursor(0,30);
+    display.print("Y: "); //Display Yellow Line current
     display.print(yellow_line_current_instant);
     display.print(" A");
+    
     yellow_line_current += yellow_line_current_instant;
-    localTime();
-    delay(6000); // 6 second delay 
+
+    current_rms_instant = sqrt((red_line_current_instant)*(red_line_current_instant) + (blue_line_current_instant)*(blue_line_current_instant) + (blue_line_current_instant)*(blue_line_current_instant)); // Calculate Average RMS Value
+    display.setCursor(0,40);
+    display.print("Final: ");
+    display.print(current_rms_instant);
+    display.print(" A");
+    display.display();
+
+    // localTime();
+    delay(1000); // 6 second delay 
   }
+  localTime();
   red_line_current = red_line_current/10;
   blue_line_current = blue_line_current/10;
   yellow_line_current = yellow_line_current/10;
 
-  current_rms = sqrt((red_line_current)*(red_line_current) + (blue_line_current)*(blue_line_current) + (blue_line_current)*(blue_line_current));
-
-  // return red_line_current, blue_line_current, yellow_line_current, current_rms;
+  current_rms = sqrt((red_line_current)*(red_line_current) + (blue_line_current)*(blue_line_current) + (blue_line_current)*(blue_line_current)); // Calculate Average RMS Value
 }
 
 void triggerLEDS() //Function to trigger LEDs. Red - GPIO14, Green - GPIO26, Blue - GPIO4
@@ -141,43 +156,17 @@ void triggerLEDS() //Function to trigger LEDs. Red - GPIO14, Green - GPIO26, Blu
   }
 }
 
-void writeToSD() // Function to read and write SD card
-{
-    if (!SD.exists("data.txt")) {
-    Serial.println("File does not exist, creating new file.");
-    
-    // Open the file in write mode to create it
-    File dataFile = SD.open("data.txt", FILE_WRITE);
-    
-    if (dataFile) {
-      dataFile.close();
-      Serial.println("New file created.");
-    } else {
-      Serial.println("Error creating file.");
-    }
-  }
 
-  Serial.println("Values do not exist, adding new values.");
-  // Open the file in append mode
-  File dataFile = SD.open("data.txt", FILE_WRITE);
 
-  if (dataFile) {
-    dataFile.print("R B Y X");
-    dataFile.close();
-    Serial.println("New values added.");
-  } else {
-    Serial.println("Error opening file.");
-  }
-}
-
-void transmittData(float four, float five, float six, float seven) //1 threshold, 3 phase values, 1 main current
+void transmittData(int region, float value_1, float value_2, float value_3, float value_4, float value_5) //1 threshold, 3 phase values, 1 main current
 { 
   Serial.print("Sending packet: ");
-  LoRa_transmitted_data = four + ',' + five + ',' + six + ',' + seven;
+  LoRa_transmitted_data = String(region) + ',' + String(value_1) + ',' + String(value_2) + ',' + String(value_3) + ',' + String(value_4) + ',' + String(value_5);
   //Send LoRa packet to receiver
-  LoRa.beginPacket();
-  LoRa.print(LoRa_transmitted_data);
-  LoRa.endPacket();
+  // LoRa.beginPacket();
+  // LoRa.print(LoRa_transmitted_data);
+  // LoRa.endPacket();
+  Serial.println(LoRa_transmitted_data);
 
 }
 void setup()
@@ -211,16 +200,24 @@ void setup()
     Serial.println("SSD1306 allocation failed"); // Don't proceed, loop forever
   }
 
-  //Setup LoRa transceiver module
+  // Setup LoRa transceiver module
   LoRa.setPins(ss, rst, dio0);
-  //replace the LoRa.begin argument with your location's frequency 
-  //433E6 for Asia, 866E6 for Europe, 915E6 for North America
-  while (!LoRa.begin(433E6)) {
+  // replace the LoRa.begin argument with your location's frequency 
+  // 433E6 for Asia, 866E6 for Europe, 915E6 for North America
+  while (!LoRa.begin(433E6)) { 
     Serial.println(".");
     delay(500);
   }
-   // Add a sync word to match the receiver for encryption purposes if required
+  Add a sync word to match the receiver for encryption purposes if required
   Serial.println("LoRa Initializing OK!");
+
+  //Initialize LEDs 
+  pinMode(14, OUTPUT);    // Red LED
+  pinMode(4, OUTPUT);     // Blue LED
+  pinMode(26, OUTPUT);    // Green LED
+  pinMode(34, INPUT);
+  pinMode(36, INPUT);
+  pinMode(39, INPUT);
 }
 
 void loop()
@@ -231,6 +228,5 @@ void loop()
   Serial.println(exactTime);
   getCurrentValue();
   triggerLEDS();
-  transmittData(threshold,red_line_current, blue_line_current, yellow_line_current);
-  // writeToSD();
+  transmittData(1, threshold,red_line_current, blue_line_current, yellow_line_current, current_rms); // Sent in the format of Unit, Threshold, Red, Blue, Yellow, RMS
 }

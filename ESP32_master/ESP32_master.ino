@@ -16,6 +16,8 @@ const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 19800; //IST +05:30  
 const int   daylightOffset_sec = 0;
 
+String unit, threshold, red_line_current, blue_line_current, yellow_line_current, current_rms, current_rms_1, current_rms_2, current_rms_3 = "";
+
 //OLED Screen Configuration
 #define OLED_SDA 21
 #define OLED_SCL 22 
@@ -72,11 +74,77 @@ void receiveData()
   display.clearDisplay();
   display.setCursor(0,0);
   display.print("Master Node");
-  display.setCursor(0,20);
-  display.print("RSSI:");
-  display.setCursor(30,20);
+  display.setCursor(0,10);
+  display.print("RSSI: ");
   display.print(rssi);
-  display.display(); 
+  
+
+  // Seperate Data
+  int commaPos = -1;
+  for (int i = 0; i < 6; i++) {
+    commaPos = LoRadata.indexOf(',');
+    if (commaPos != -1) {
+      if (i == 0) {
+        unit = LoRadata.substring(0, commaPos);
+      } else if (i == 1) {
+        threshold = LoRadata.substring(0, commaPos);
+      } else if (i == 2) {
+        red_line_current = LoRadata.substring(0, commaPos);
+      } else if (i == 3) {
+        blue_line_current = LoRadata.substring(0, commaPos);
+      } else if (i == 4) {
+        yellow_line_current = LoRadata.substring(0, commaPos);
+      } else if (i == 5) {
+        current_rms = LoRadata.substring(0, commaPos);
+      }
+      LoRadata = LoRadata.substring(commaPos + 1);
+    } else {
+      current_rms = data;
+    }
+    if (unit == "1") {
+      current_rms_1 = current_rms;
+    } else if (unit =="2") {
+      current_rms_2 = current_rms;
+    } else if (unit =="3") {
+      current_rms_3 = current_rms;
+    }
+  }
+  display.setCursor(0,30);
+  display.print("Unit 1: " + current_rms_1 " A");
+  display.setCursor(0,40);
+  display.print("Unit 2: " + current_rms_2 " A");
+  display.setCursor(0,50);
+  display.print("Unit 3: " + current_rms_3 " A");
+  display.display();
+}
+
+void writeToSD() // Function to read and write SD card
+{
+    if (!SD.exists("data.txt")) {
+    Serial.println("File does not exist, creating new file.");
+    
+    // Open the file in write mode to create it
+    File dataFile = SD.open("data.txt", FILE_WRITE);
+    
+    if (dataFile) {
+      dataFile.close();
+      Serial.println("New file created.");
+    } else {
+      Serial.println("Error creating file.");
+    }
+  }
+
+  Serial.println("Values do not exist, adding new values.");
+  // Open the file in append mode
+  File dataFile = SD.open("data.txt", FILE_WRITE);
+
+  if (dataFile) {
+    dataFile.print(LoRaData);
+    dataFile.close();
+    Serial.println("New values added.");
+  } else {
+    Serial.println("Error opening file.");
+  }
 }
 
 void sendToCloud()
@@ -115,5 +183,5 @@ void setup() {
 void loop() {
   localTime();
   receiveData();
-
+  writeToSD();
 }
