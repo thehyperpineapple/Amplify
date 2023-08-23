@@ -3,13 +3,21 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-#include <SD.h>
-#include <SPI.h>
+#include "FS.h"
+#include "SD.h"
+#include "SPI.h"
+#include "SPIFFS.h"
 #include <LoRa.h>
+#include <master_info.h>
+
+// ThingSpeak Credentials
+const char* server = "api.thingspeak.com";
+String apiKey = API_KEY; //Enter Write API Key
+WiFiClient client;
 
 // Network credentials
-const char* ssid     = "SERAPHIX";
-const char* password = "hyperpineapple0452";
+const char* ssid     = MASTER_SSID;
+const char* password = MASTER_SSID;
 
 //NTP Server Configuration
 const char* ntpServer = "pool.ntp.org";
@@ -58,6 +66,36 @@ void localTime() // Function to get date and time
   
 }
 
+void appendFile(fs::FS &fs, const char * path, String message){
+  Serial.printf("Appending to file: %s\n", path);
+
+  File file = fs.open(path, FILE_APPEND);
+  if(!file){
+    Serial.println("Failed to open file for appending");
+    return;
+  }
+  if(file.print(message)){
+    Serial.println("Message appended");
+  } else {
+    Serial.println("Append failed");
+  }
+  file.close();
+}
+
+bool checkFileExists(const char* filePath) {
+  if (SD.begin()) { // Initialize the SD card
+    if (SD.exists(filePath)) { // Check if the file exists
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    // Failed to initialize SD card
+    Serial.println("SD card initialization failed.");
+    return false;
+  }
+}
+
 void receiveData()
 {
   int packetSize = LoRa.parsePacket();
@@ -78,7 +116,6 @@ void receiveData()
   display.print("RSSI: ");
   display.print(rssi);
   
-
   // Seperate Data
   int commaPos = -1;
   for (int i = 0; i < 6; i++) {
@@ -118,38 +155,38 @@ void receiveData()
   display.display();
 }
 
-void writeToSD() // Function to read and write SD card
-{
-    if (!SD.exists("data.txt")) {
-    Serial.println("File does not exist, creating new file.");
-    
-    // Open the file in write mode to create it
-    File dataFile = SD.open("data.txt", FILE_WRITE);
-    
-    if (dataFile) {
-      dataFile.close();
-      Serial.println("New file created.");
-    } else {
-      Serial.println("Error creating file.");
-    }
-  }
 
-  Serial.println("Values do not exist, adding new values.");
-  // Open the file in append mode
-  File dataFile = SD.open("data.txt", FILE_WRITE);
-
-  if (dataFile) {
-    dataFile.print(LoRaData);
-    dataFile.close();
-    Serial.println("New values added.");
-  } else {
-    Serial.println("Error opening file.");
-  }
-}
 
 void sendToCloud()
 {
-  to_cloud_data = dayOfWeek + ',' date
+  if(client.connect(server,80)){
+    String postStr = apiKey;
+
+    postStr = "&field1=";
+    postStr = String(unit);
+    postStr = "&field2=";
+    postStr = String(threshold);
+    postStr = "&field3=";
+    postStr = String(red_line_current);
+    postStr = "&field4=";
+    postStr = String(blue_line_current);
+    postStr = "&field5=";
+    postStr = String(yellow_line_current);
+    postStr = "&field6=";
+    postStr = String(current_rms);
+    postStr += "\r\n\r\n";
+
+    client.print("POST /update HTTP/1.1\n");
+    client.print("Host: api.thingspeak.com\n");
+    client.print("Connection: close\n");
+    client.print("X-THINGSPEAKAPIKEY: "+apiKey+"\n");
+    client.print("Content-Type: application/x-www-form-urlencoded\n");
+    client.print("Content-Length: ");
+    client.print(postStr.length());
+    client.print("\n\n");
+    client.print(postStr);
+  }
+
 }
 
 void setup() {
@@ -178,10 +215,21 @@ void setup() {
   // ranges from 0-0xFF
   Serial.println("LoRa Initializing OK!");
 
+  //SD Card Config
+  bool fileExists = checkFileExists("/data.csv");
+  
+  if (fileExists) {
+    Serial.println("File exists.");
+  } else {
+    Serial.println("File does not exist.");
+    appendFile(SD, "/data.csv", "unit, day, date, time, blue line, yellow line, red line, current rms\n");
+  }
+
 }
 
 void loop() {
   localTime();
   receiveData();
-  writeToSD();
+  sendToCloud()
+  appendFile(SD, "/data.csv", LoRaData);
 }
