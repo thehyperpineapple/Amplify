@@ -5,10 +5,11 @@
 #include <Adafruit_SSD1306.h>
 #include <SD.h>
 #include <LoRa.h>
+#include <edge_info.h>
 
 // Network credentials
-const char* ssid     = "SERAPHIX";
-const char* password = "hyperpineapple0452";
+const char* ssid     = EDGE_SSID;
+const char* password = EDGE_PASSWORD;
 
 //NTP Server Configuration
 const char* ntpServer = "pool.ntp.org";
@@ -38,7 +39,6 @@ int ct_ratio = 2500;
 float red_line_current, blue_line_current, yellow_line_current, current_rms;
 float threshold = 10.0;
 float threshold_upper = threshold + 0.5;
-float threshold_lower = threshold - 0.5;
 String dayOfWeek, date, exactTime, LoRa_transmitted_data;
 
 void localTime() // Function to get date and time
