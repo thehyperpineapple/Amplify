@@ -163,18 +163,21 @@ void sendToCloud()
     String postStr = apiKey;
 
     postStr = "&field1=";
-    postStr = String(unit);
-    postStr = "&field2=";
-    postStr = String(threshold);
-    postStr = "&field3=";
-    postStr = String(red_line_current);
-    postStr = "&field4=";
-    postStr = String(blue_line_current);
-    postStr = "&field5=";
-    postStr = String(yellow_line_current);
-    postStr = "&field6=";
-    postStr = String(current_rms);
-    postStr += "\r\n\r\n";
+    postStr += String(unit);
+    postStr += "&field2=";
+    postStr += String(exactTime);
+    postStr += "&field3=";
+    postStr += String(date);
+    postStr += "&field4=";
+    postStr += String(threshold);
+    postStr += "&field5=";
+    postStr += String(red_line_current);
+    postStr += "&field6=";
+    postStr += String(blue_line_current);
+    postStr += "&field7=";
+    postStr += String(yellow_line_current);
+    postStr += "&field8=";
+    postStr += String(current_rms);
 
     client.print("POST /update HTTP/1.1\n");
     client.print("Host: api.thingspeak.com\n");
@@ -185,6 +188,7 @@ void sendToCloud()
     client.print(postStr.length());
     client.print("\n\n");
     client.print(postStr);
+    Serial.println("Success");
   }
 
 }
