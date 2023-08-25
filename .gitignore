@@ -3,3 +3,4 @@ ESP32_edge/edge_info.h
 env/
 node_modules/
 *.env
+output.css
