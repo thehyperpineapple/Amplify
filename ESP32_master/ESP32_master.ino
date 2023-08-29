@@ -8,11 +8,11 @@
 #include "SPI.h"
 #include "SPIFFS.h"
 #include <LoRa.h>
-#include <master_info.h>
+#include "master_info.h"
 
 // ThingSpeak Credentials
-const char* server = "api.thingspeak.com";
-String apiKey = API_KEY; //Enter Write API Key
+const char* thingspeak_server = "api.thingspeak.com"; //ThingSpeak API Server
+String apiKey = API_KEY; // Write API Key
 WiFiClient client;
 
 // Network credentials
@@ -24,7 +24,9 @@ const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 19800; //IST +05:30  
 const int   daylightOffset_sec = 0;
 
-String unit, threshold, red_line_current, blue_line_current, yellow_line_current, current_rms, current_rms_1, current_rms_2, current_rms_3 = "";
+// Declare Variables
+String date, exactTime, LoRaData, unit, threshold, red_line_current, blue_line_current, yellow_line_current, current_rms, current_rms_1, current_rms_2, current_rms_3 = "";
+
 
 //OLED Screen Configuration
 #define OLED_SDA 21
@@ -43,8 +45,6 @@ const int chipSelect = 2;
 #define rst 14
 #define dio0 39
 
-String dayOfWeek, date, exactTime, LoRaData, to_cloud_data;
-
 void localTime() // Function to get date and time
 {
   struct tm timeinfo;
@@ -53,14 +53,11 @@ void localTime() // Function to get date and time
     return;
   }
 
-  char dayOfWeek_array[20]; // Array to store the day of the week
   char date_array[30];      // Array to store the formatted date
   char exactTime_array[20];      // Array to store the formatted time
 
-  strftime(dayOfWeek_array, sizeof(dayOfWeek_array), "%A", &timeinfo);
   strftime(date_array, sizeof(date_array), "%d-%B-%Y", &timeinfo);
   strftime(exactTime_array, sizeof(exactTime_array), "%H:%M:%S", &timeinfo);
-  dayOfWeek = String(dayOfWeek_array);
   date = String(date_array);
   exactTime = String(exactTime_array);
   
@@ -82,7 +79,7 @@ void appendFile(fs::FS &fs, const char * path, String message){
   file.close();
 }
 
-bool checkFileExists(const char* filePath) {
+bool checkFileExists(const char* filePath) { //Function to check if data.csv exists in the SD Card
   if (SD.begin()) { // Initialize the SD card
     if (SD.exists(filePath)) { // Check if the file exists
       return true;
@@ -96,7 +93,7 @@ bool checkFileExists(const char* filePath) {
   }
 }
 
-void receiveData()
+void receiveData() //Receive Data using LoRa module
 {
   int packetSize = LoRa.parsePacket();
   if (packetSize) {
@@ -107,7 +104,7 @@ void receiveData()
   }
   //print RSSI of packet
   int rssi = LoRa.packetRssi();
-  Serial.print(" with RSSI ");    
+  Serial.print(" with RSSI "); //Check the RSSI for connectivity
   Serial.println(rssi);
   display.clearDisplay();
   display.setCursor(0,0);
@@ -119,24 +116,28 @@ void receiveData()
   // Seperate Data
   int commaPos = -1;
   for (int i = 0; i < 6; i++) {
-    commaPos = LoRadata.indexOf(',');
+    commaPos = LoRaData.indexOf(',');
     if (commaPos != -1) {
       if (i == 0) {
-        unit = LoRadata.substring(0, commaPos);
+        unit = LoRaData.substring(0, commaPos);
       } else if (i == 1) {
-        threshold = LoRadata.substring(0, commaPos);
+        date = LoRaData.substring(0, commaPos);
       } else if (i == 2) {
-        red_line_current = LoRadata.substring(0, commaPos);
+        exactTime = LoRaData.substring(0, commaPos);
       } else if (i == 3) {
-        blue_line_current = LoRadata.substring(0, commaPos);
+        threshold = LoRaData.substring(0, commaPos);
       } else if (i == 4) {
-        yellow_line_current = LoRadata.substring(0, commaPos);
+        red_line_current = LoRaData.substring(0, commaPos);
       } else if (i == 5) {
-        current_rms = LoRadata.substring(0, commaPos);
+        blue_line_current = LoRaData.substring(0, commaPos);
+      } else if (i == 6) {
+        yellow_line_current = LoRaData.substring(0, commaPos);
+      } else if (i == 7) {
+        current_rms = LoRaData.substring(0, commaPos);
       }
-      LoRadata = LoRadata.substring(commaPos + 1);
+      LoRaData = LoRaData.substring(commaPos + 1);
     } else {
-      current_rms = data;
+      current_rms = LoRaData;
     }
     if (unit == "1") {
       current_rms_1 = current_rms;
@@ -147,19 +148,18 @@ void receiveData()
     }
   }
   display.setCursor(0,30);
-  display.print("Unit 1: " + current_rms_1 " A");
+  display.print("Unit 1: " + current_rms_1 + " A");
   display.setCursor(0,40);
-  display.print("Unit 2: " + current_rms_2 " A");
+  display.print("Unit 2: " + current_rms_2 + " A");
   display.setCursor(0,50);
-  display.print("Unit 3: " + current_rms_3 " A");
+  display.print("Unit 3: " + current_rms_3 + " A");
   display.display();
 }
 
 
-
-void sendToCloud()
+void sendToCloud() //Send data to ThingSpeak Cloud
 {
-  if(client.connect(server,80)){
+  if(client.connect(thingspeak_server,80)){
     String postStr = apiKey;
 
     postStr = "&field1=";
@@ -214,9 +214,6 @@ void setup() {
     Serial.println(".");
     delay(500);
   }
-   // Change sync word (0xF3) to match the receiver
-  // The sync word assures you don't get LoRa messages from other LoRa transceivers
-  // ranges from 0-0xFF
   Serial.println("LoRa Initializing OK!");
 
   //SD Card Config
@@ -234,6 +231,6 @@ void setup() {
 void loop() {
   localTime();
   receiveData();
-  sendToCloud()
+  sendToCloud();
   appendFile(SD, "/data.csv", LoRaData);
 }

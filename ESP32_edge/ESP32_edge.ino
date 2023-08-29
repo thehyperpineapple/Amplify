@@ -5,7 +5,9 @@
 #include <Adafruit_SSD1306.h>
 #include <SD.h>
 #include <LoRa.h>
-#include <edge_info.h>
+#include "edge_info.h"
+#include <AsyncTCP.h>
+#include <ESPAsyncWebSrv.h>
 
 // Network credentials
 const char* ssid     = EDGE_SSID;
@@ -36,10 +38,56 @@ const int chipSelect = 2;
 // Declaring Variables
 int ct_resistance = 150;
 int ct_ratio = 2500;
+int unit = 1;
 float red_line_current, blue_line_current, yellow_line_current, current_rms;
 float threshold = 10.0;
 float threshold_upper = threshold + 0.5;
 String dayOfWeek, date, exactTime, LoRa_transmitted_data;
+AsyncWebServer server(80);
+const char* PARAM_INPUT_1 = "input1";
+
+// HTML web page to handle threshold input field 
+const char index_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>ESP Input Form</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            overflow-y: hidden;
+            overflow-x: hidden;
+        }
+        .wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+        }
+        .form-text{
+            font-size: x-large;
+            text-align: center;
+        }
+      </style>
+    <body>
+        <div class="wrapper">
+            <div class="form-div">
+                <form action="/get">
+                  <p class="form-text">New Threshold Value</p>
+                  <span>
+                    <input type="number" name="input1" id="floatTextBox" step="0.01" min="0">
+                    <input type="submit" value="Submit">
+                  </span>
+                </form>
+            </div>
+        </div>
+  </body>
+</html>)rawliteral";
 
 void localTime() // Function to get date and time
 {
@@ -64,7 +112,7 @@ void localTime() // Function to get date and time
 
 float voltageToCurrent(int value) //Convert voltage obtained from CT to Required current
 {
-  return (ct_ratio*value*1.3/(ct_resistance*4096)); // Dividing resistance after converting it back to analog values. Multiplying with CT's factor
+  return (ct_ratio*map(value,0,4096,0,1.3)/ct_resistance); // Mapping Digital to Analog values. Dividing with resistance to obtain current. Multiplying with CT's ratio to get actual current
 }
 
 void getCurrentValue() //Function to get the value of current in each phase line
@@ -76,7 +124,7 @@ void getCurrentValue() //Function to get the value of current in each phase line
   int count;
   
 
-  for (count = 0; count <10; count++) 
+  for (count = 0; count <10; count++) // Initializing a for loop to collect data and average them out
   {
     display.clearDisplay(); //Clear Display
     display.setTextColor(WHITE);
@@ -116,17 +164,20 @@ void getCurrentValue() //Function to get the value of current in each phase line
     current_rms_instant = sqrt((red_line_current_instant)*(red_line_current_instant) + (blue_line_current_instant)*(blue_line_current_instant) + (blue_line_current_instant)*(blue_line_current_instant)); // Calculate Average RMS Value
     display.setCursor(0,40);
     display.print("Final: ");
-    display.print(current_rms_instant);
+    display.print(current_rms_instant); //Display RMS Current value
     display.print(" A");
+
+    display.setCursor(0,50);
+    display.print(WiFi.localIP());
     display.display();
 
     // localTime();
     delay(1000); // 6 second delay 
   }
   localTime();
-  red_line_current = red_line_current/10;
-  blue_line_current = blue_line_current/10;
-  yellow_line_current = yellow_line_current/10;
+  red_line_current = red_line_current/10; // Average Red Line Current Value
+  blue_line_current = blue_line_current/10; // Average Blue Line Current Value
+  yellow_line_current = yellow_line_current/10; // Average Yellow Line Current Value
 
   current_rms = sqrt((red_line_current)*(red_line_current) + (blue_line_current)*(blue_line_current) + (blue_line_current)*(blue_line_current)); // Calculate Average RMS Value
 }
@@ -156,19 +207,82 @@ void triggerLEDS() //Function to trigger LEDs. Red - GPIO14, Green - GPIO26, Blu
   }
 }
 
+void appendFile(fs::FS &fs, const char * path, String message){ //Function to append collected data to a data.csv in SD Card
+  Serial.printf("Appending to file: %s\n", path);
+
+  File file = fs.open(path, FILE_APPEND);
+  if(!file){
+    Serial.println("Failed to open file for appending");
+    return;
+  }
+  if(file.print(message)){
+    Serial.println("Message appended");
+  } else {
+    Serial.println("Append failed");
+  }
+  file.close();
+}
+
+bool checkFileExists(const char* filePath) {
+  if (SD.begin()) { // Initialize the SD card
+    if (SD.exists(filePath)) { // Check if the file exists
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    // Failed to initialize SD card
+    Serial.println("SD card initialization failed.");
+    return false;
+  }
+}
 
 
 void transmittData(int region, float value_1, float value_2, float value_3, float value_4, float value_5) //1 threshold, 3 phase values, 1 main current
 { 
   Serial.print("Sending packet: ");
-  LoRa_transmitted_data = String(region) + ',' + String(value_1) + ',' + String(value_2) + ',' + String(value_3) + ',' + String(value_4) + ',' + String(value_5);
+  LoRa_transmitted_data = String(region) + ',' + date + ',' + exactTime + ',' + String(value_1) + ',' + String(value_2) + ',' + String(value_3) + ',' + String(value_4) + ',' + String(value_5);
   //Send LoRa packet to receiver
   // LoRa.beginPacket();
   // LoRa.print(LoRa_transmitted_data);
   // LoRa.endPacket();
   Serial.println(LoRa_transmitted_data);
+  appendFile(SD, "/data.csv", LoRa_transmitted_data);
 
 }
+
+void notFound(AsyncWebServerRequest *request) {
+  request->send(404, "text/plain", "Not found");
+}
+
+void liveServer(){ //Function to setup Live Server Page
+  // Send web page with input fields to client
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send_P(200, "text/html", index_html);
+  });
+
+  // Send a GET request to <ESP_IP>/get?input1=<inputMessage>
+  server.on("/get", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    String inputParam;
+    // GET input1 value on <ESP_IP>/get?input1=<inputMessage>
+    if (request->hasParam(PARAM_INPUT_1)) {
+      inputMessage = request->getParam(PARAM_INPUT_1)->value();
+      inputParam = PARAM_INPUT_1;
+    }
+    else {
+      inputMessage = "No message sent";
+      inputParam = "none";
+    }
+    threshold = inputMessage.toFloat();
+    Serial.println(inputMessage);
+    request->send(200, "text/html", "Threshold Value updated with value: " + inputMessage +
+                                     "<br><a href=\"/\">Return to Home Page</a>");
+  });
+  server.onNotFound(notFound);
+  server.begin();
+}
+
 void setup()
 {
   analogSetAttenuation(ADC_6db); //Setting the attenuation to 6db, Setting the limit of voltage read to 1.3 Volts
@@ -188,10 +302,9 @@ void setup()
   localTime();
 
   // SD Initialization
-  if (!SD.begin(2)) {
-    Serial.println("Card failed, or not present");
-  } else {
-    Serial.println("Card initialized.");
+  if(!SD.begin()){
+    Serial.println("Card Mount Failed");
+    return;
   }
 
   //OLED Initialization
@@ -208,7 +321,7 @@ void setup()
     Serial.println(".");
     delay(500);
   }
-  Add a sync word to match the receiver for encryption purposes if required
+
   Serial.println("LoRa Initializing OK!");
 
   //Initialize LEDs 
@@ -218,15 +331,27 @@ void setup()
   pinMode(34, INPUT);
   pinMode(36, INPUT);
   pinMode(39, INPUT);
+
+  Serial.println();
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  liveServer();
+
+  bool fileExists = checkFileExists("/data.csv");
+  
+  if (fileExists) {
+    Serial.println("File exists.");
+  } else {
+    Serial.println("File does not exist.");
+    appendFile(SD, "/data.csv", "unit, date, time, threshold, red line, blue line, yellow line, current rms\n");
+  }
 }
 
 void loop()
 {
-  // delay(1000);
-  Serial.println(dayOfWeek);
-  Serial.println(date);
-  Serial.println(exactTime);
+
   getCurrentValue();
   triggerLEDS();
-  transmittData(1, threshold,red_line_current, blue_line_current, yellow_line_current, current_rms); // Sent in the format of Unit, Threshold, Red, Blue, Yellow, RMS
+  transmittData(unit, threshold,red_line_current, blue_line_current, yellow_line_current, current_rms); // Sent in the format of Unit, Threshold, Red, Blue, Yellow, RMS
 }
