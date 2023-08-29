@@ -1,5 +1,5 @@
-ESP32_master/master_info.h
-ESP32_edge/edge_info.h
+# ESP32_master/master_info.h
+# ESP32_edge/edge_info.h
 env/
 node_modules/
 *.env
