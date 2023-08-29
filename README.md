@@ -1,7 +1,7 @@
 # Amplify
-### IoT Current Monitoring and Visualization System
+#### IoT Current Monitoring and Visualization System
 
-This is an IoT project designed to monitor the current flowing through a 3-phase motor using an ESP32 development board and current transformers. The project's primary goal is to gather real-time current data through an edge node and transmit it a master node using LoRa. The master node will then upload to ThingSpeak, an IoT analytics platform, for further analysis and visualization. Additionally, A web application built with Python (Flask) allows users to conveniently monitor and visualize the current data collected from the motor.
+This is an IoT project designed to monitor the current flowing through a 3-phase motor using an ESP32 development board and current transformers. The project's primary goal is to gather real-time current data through an edge node and transmit it a master node using LoRa. The master node will then upload to ThingSpeak, an IoT analytics platform, for further analysis and visualization. Additionally, a web application built with Python (Flask) allows users to conveniently monitor and visualize the current data collected from the motor.
 
 ## Features
 
@@ -21,7 +21,7 @@ Following hardware components are required
 - LoRa Module
 - SD Card
 - OLED Display (128 x 64 px)
-- Wifi 
+- Wi-Fi 
 
 ## Software Requirements
 
@@ -29,3 +29,7 @@ Following hardware components are required
 - Python
 - Flask
 - ThingSpeak Account
+
+## Screenshots
+![Web Application](https://imgur.com/1fxP8aQ.png)
+![ThingSpeak Channel](https://imgur.com/wbh1JHA.png)
