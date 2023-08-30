@@ -34,4 +34,4 @@ Following hardware components are required
 
 ## Screenshots
 ![Home Page](https://imgur.com/otOiPh2.png)
-![Data Visualization](https://imgur.com/O7mwho1.ong)
+![Data Visualization](https://imgur.com/O7mwho1.png)
