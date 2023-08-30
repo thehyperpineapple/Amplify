@@ -29,7 +29,9 @@ Following hardware components are required
 - Python
 - Flask
 - ThingSpeak Account
+- Tailwind CSS
+- ChartJS
 
 ## Screenshots
-![Web Application](https://imgur.com/1fxP8aQ.png)
-![ThingSpeak Channel](https://imgur.com/wbh1JHA.png)
+![Home Page](https://imgur.com/otOiPh2.png)
+![Data Visualization](https://imgur.com/O7mwho1.ong)
