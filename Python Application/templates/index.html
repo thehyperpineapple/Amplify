@@ -4,16 +4,42 @@
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="icon" sizes="40x40" href="{{ url_for('static', filename='images/amplify-logo.png') }}">
+        <link rel="icon" sizes="40x40" href="{{ url_for('static', filename='images/amplify-logo-transparent.webp') }}">
         <link href="{{url_for('static',filename='css/output.css')}}" rel="stylesheet">
         <title>Amplify</title>
     </head>
     <body class="h-full w-full dark">
         <div class="dark:bg-darkb">
-            <h1 class="font-grotesk text-center mb-4 text-4xl font-extrabold leading-none tracking-tight md:text-5xl lg:text-6xl "><span class="text-transparent bg-clip-text bg-gradient-to-r from-rice to-blue-100">Amplify</span></h1>
-            <p class="text-center normal-case text-lg font-normal text-gray-500 lg:text-xl sm:px-16 xl:px-48 dark:text-rice opacity-75">Web application built with Python (Flask) that allows users to conveniently monitor and visualize the current data collected from a 3-Phase Motor using an ESP32 development board and current transformers.</p> 
-            <div class="relative overflow-x-auto shadow-md p-10 ">
-                <div class=" dark:rounded-lg ">
+            <nav class="py-1 dark:bg-[#374151] font-grotesk">
+                <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4 ">
+                    <a href="/" class="flex items-center">
+                        <img src="/static/images/amplify-logo-transparent.webp" class="h-10 mr-3" alt="Flowbite Logo" />
+                        <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">Amplify</span>
+                    </a>
+                    <button data-collapse-toggle="navbar-default" type="button" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600" aria-controls="navbar-default" aria-expanded="false">
+                        <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h15M1 7h15M1 13h15"/>
+                        </svg>
+                    </button>
+                  <div class="hidden w-full md:block md:w-auto" id="navbar-default">
+                    <ul class="font-medium flex p-4 md:p-0 mt-4 border border-gray-100 rounded-lg  md:flex-row md:space-x-8 md:mt-0 md:border-0 dark:border-gray-700">
+                      <li>
+                        <a href="/" class="block py-2 pl-3 pr-4 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-500" aria-current="page">Home</a>
+                      </li>
+                      <li>
+                        <a href="/dashboard" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">Dashboard</a>
+                      </li>
+                      <li>
+                        <a href="https://github.com/thehyperpineapple/Amplify" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">Source Code</a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+            </nav>
+            <h1 class="font-poppins text-center mb-4 text-4xl font-extrabold pt-7 leading-none tracking-tight md:text-5xl lg:text-6xl "><span class="text-transparent bg-clip-text bg-gradient-to-r from-rice to-blue-100">Visualize & Monitor Data</span></h1>
+            <p class="text-center font-grotesk py-4 normal-case text-lg font-normal text-gray-500 lg:text-xl sm:px-16 xl:px-48 dark:text-rice opacity-75">Web application built with Python (Flask) that allows users to conveniently access the current data collected from a 3-Phase Motor using an ESP32 development board and current transformers.</p> 
+            <div class="relative overflow-x-auto shadow-md px-10 ">
+                <div class=" py-2 dark:rounded-lg ">
                     <table class="w-full text-sm text-left text-gray-500 dark:text-slate-100 ">
                         <thead class="text-xs text-gray-400 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                             <tr>
@@ -114,7 +140,7 @@
                     </table>
                 </div>
             </div>
-            <footer class="bg-white dark:bg-gray-800">
+            <footer class="bottom-0 dark:bg-gray-800">
                 <div class="w-full mx-auto max-w-screen-xl p-4 md:flex md:items-center md:justify-between">
                   <span class="text-sm text-gray-500 sm:text-center dark:text-gray-400">Created by <a href='https://github.com/thehyperpineapple' class="hover:underline">thehyperpineapple</a> © 2023
                 </span>

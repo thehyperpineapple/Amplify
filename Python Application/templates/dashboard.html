@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="icon" sizes="40x40" href="{{ url_for('static', filename='images/amplify-logo-transparent.webp') }}">
+        <link href="{{url_for('static',filename='css/output.css')}}" rel="stylesheet">
+        <title>Amplify</title>
+    </head>
+    <body class="h-full w-full dark">
+        <div class="dark:bg-darkb">
+            <nav class="py-1 dark:bg-[#374151] font-grotesk">
+                <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4 ">
+                    <a href="/" class="flex items-center">
+                        <img src="/static/images/amplify-logo-transparent.webp" class="h-10 mr-3" alt="Flowbite Logo" />
+                        <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">Amplify</span>
+                    </a>
+                    <button data-collapse-toggle="navbar-default" type="button" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600" aria-controls="navbar-default" aria-expanded="false">
+                        <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h15M1 7h15M1 13h15"/>
+                        </svg>
+                    </button>
+                  <div class="hidden w-full md:block md:w-auto" id="navbar-default">
+                    <ul class="font-medium flex p-4 md:p-0 mt-4 border border-gray-100 rounded-lg  md:flex-row md:space-x-8 md:mt-0 md:border-0 dark:border-gray-700">
+                      <li>
+                        <a href="/" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent" aria-current="page">Home</a>
+                      </li>
+                      <li>
+                        <a href="/dashboard" class="block py-2 pl-3 pr-4 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-500" aria-current="page">Dashboard</a>
+                      </li>
+                      <li>
+                        <a href="https://github.com/thehyperpineapple/Amplify" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">Source Code</a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+            </nav>
+            <h1 class="font-poppins text-center mb-4 text-4xl font-extrabold pt-7 leading-none tracking-tight md:text-5xl lg:text-6xl "><span class="text-transparent bg-clip-text bg-gradient-to-r from-rice to-blue-100">Data Visualization</span></h1>
+            <p class="text-center font-grotesk py-4 normal-case text-lg font-normal text-gray-500 lg:text-xl sm:px-16 xl:px-48 dark:text-rice opacity-75">The 30 most recent Data Entries are displayed on the graphs below.</p> 
+            <div class="grid grid-cols-2 grid-rows-2 gap-4 p-4">
+                <div class="p-5">
+                    <canvas id="redChart"></canvas>
+                </div>
+                <div class="p-5">
+                    <canvas id="blueChart"></canvas>
+                </div>
+                <div class="p-5">
+                    <canvas id="yellowChart"></canvas>
+                </div>
+                <div class="p-5">
+                    <canvas id="rmsChart"></canvas>
+                </div>
+            </div>
+            <footer class="w-full dark:bg-gray-800">
+                <div class="w-full mx-auto max-w-screen-xl p-4 md:flex md:items-center md:justify-between">
+                  <span class="text-sm text-gray-500 sm:text-center dark:text-gray-400">Created by <a href='https://github.com/thehyperpineapple' class="hover:underline">thehyperpineapple</a> © 2023
+                </span>
+                
+                <ul class="flex flex-wrap items-center mt-3 text-sm font-medium text-gray-500 dark:text-gray-400 sm:mt-0">
+                    <li>
+                        <a href="https://github.com/thehyperpineapple" class="text-gray-500 hover:text-gray-900 dark:hover:text-white">
+                            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fill-rule="evenodd" d="M10 .333A9.911 9.911 0 0 0 6.866 19.65c.5.092.678-.215.678-.477 0-.237-.01-1.017-.014-1.845-2.757.6-3.338-1.169-3.338-1.169a2.627 2.627 0 0 0-1.1-1.451c-.9-.615.07-.6.07-.6a2.084 2.084 0 0 1 1.518 1.021 2.11 2.11 0 0 0 2.884.823c.044-.503.268-.973.63-1.325-2.2-.25-4.516-1.1-4.516-4.9A3.832 3.832 0 0 1 4.7 7.068a3.56 3.56 0 0 1 .095-2.623s.832-.266 2.726 1.016a9.409 9.409 0 0 1 4.962 0c1.89-1.282 2.717-1.016 2.717-1.016.366.83.402 1.768.1 2.623a3.827 3.827 0 0 1 1.02 2.659c0 3.807-2.319 4.644-4.525 4.889a2.366 2.366 0 0 1 .673 1.834c0 1.326-.012 2.394-.012 2.72 0 .263.18.572.681.475A9.911 9.911 0 0 0 10 .333Z" clip-rule="evenodd"/>
+                            </svg>
+                        </a>
+                    </li>
+                </ul>
+                </div> 
+            </footer>
+        </div>
+        <script>
+            const labels = {{ date_list | tojson}};
+     
+            const red_data = {
+                labels: labels,
+                datasets: [{
+                    label: 'Red-Line',
+                    backgroundColor: 'rgb(255, 99, 132)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    data: {{ red_line_list | tojson}},
+                }]
+            };
+            const blue_data = {
+                labels: labels,
+                datasets: [{
+                    label: 'Blue-Line',
+                    backgroundColor: 'rgb(0, 150, 255)',
+                    borderColor: 'rgb(0, 150, 255)',
+                    data: {{ blue_line_list | tojson}},
+                }]
+            };
+            const yellow_data = {
+                labels: labels,
+                datasets: [{
+                    label: 'Yellow-Line',
+                    backgroundColor: 'rgb(255,255,0)',
+                    borderColor: 'rgb(255,255,0)',
+                    data: {{ yellow_line_list | tojson}},
+                }]
+            };
+            const rms_data = {
+                labels: labels,
+                datasets: [{
+                    label: 'Net Current',
+                    backgroundColor: 'rgb(255, 253, 208)',
+                    borderColor: 'rgb(255, 253, 208)',
+                    data: {{ net_current_list | tojson}},
+                }]
+            };
+     
+            const red_config = {type: 'line', data: red_data, options: {plugins: {subtitle: {display: true, text: 'Red Line Data', color: 'rgb(255, 99, 132)', font: {size: 20}}}, maintainAspectRatio: true, scales: {x: {ticks: {display: false}}}}};
+            const blue_config = {type: 'line', data: blue_data, options: {plugins: {subtitle: {display: true, text: 'Blue Line Data', color: 'rgb(0, 150, 255)', font: {size: 20}}}, maintainAspectRatio: true, scales: {x: {ticks: {display: false}}}}};
+            const yellow_config = {type: 'line', data: yellow_data, options: {plugins: {subtitle: {display: true, text: 'Yellow Line Data', color: 'rgb(255,255,0)', font: {size: 20}}}, maintainAspectRatio: true, scales: {x: {ticks: {display: false}}}}};
+            const rms_config = {type: 'line', data: rms_data, options: {plugins: {subtitle: {display: true, text: 'Current RMS', color: 'rgb(255, 253, 208)', font: {size: 20}}}, maintainAspectRatio: true, scales: {x: {ticks: {display: false}}}}};
+
+     
+            const myChart1 = new Chart(document.getElementById('redChart'),red_config);
+            const myChart2 = new Chart(document.getElementById('blueChart'),blue_config);
+            const myChart3 = new Chart(document.getElementById('yellowChart'),yellow_config);
+            const myChart4 = new Chart(document.getElementById('rmsChart'),rms_config);
+
+        </script>
+    </body>
+</html>
