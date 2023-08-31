@@ -3,7 +3,6 @@ from flask import Flask, render_template, jsonify
 import os
 from dotenv import find_dotenv,load_dotenv
 import thingspeak
-from subprocess import Popen, PIPE
 import json
 
 # Fetch environment variables
